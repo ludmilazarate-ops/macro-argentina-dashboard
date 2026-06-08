@@ -2,7 +2,21 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import requests
+import re
+import unicodedata
 
+def normalizar(texto):
+    if pd.isna(texto):
+        return ""
+
+    texto = str(texto).strip().lower()
+
+    texto = ''.join(
+        c for c in unicodedata.normalize('NFD', texto)
+        if unicodedata.category(c) != 'Mn'
+    )
+
+    return texto
 # 1. Configuración de la aplicación web
 st.set_page_config(
     page_title="Lunes Macro - Consultores", 
@@ -40,7 +54,7 @@ dolar_mep_vivo, dolar_oficial_vivo, brecha_viva = obtener_dolares_vivos()
 # --- CONEXIÓN A GOOGLE SHEETS (4 PESTAÑAS) ---
 SHEET_ID = "1zksr6ipnnKgYQJR8_H1PLdyiglmCAAaBe29Xb-8zCoY"
 
-@st.cache_data(ttl=300) 
+@st.cache_data(ttl=600) 
 def cargar_pestana(nombre_pestana):
     url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={nombre_pestana}"
     try:
@@ -60,9 +74,34 @@ st.sidebar.title("📊 LUNES MACRO")
 pantalla = st.sidebar.radio("Seleccioná la vista:", ["🏠 Presentación General", "🏢 Análisis por Sector"])
 
 if pantalla == "🏢 Análisis por Sector":
+
     st.sidebar.divider()
-    sectores_lista = ["Comercio minorista", "Comercio mayorista", "Gastronomía", "Construcción", "Servicios / Indumentaria", "Industria", "Automotriz", "Alimentos / Combustibles"]
-    sector_sel = st.sidebar.selectbox("Elegí el Sector a analizar:", sectores_lista)
+
+    if df_detalles is not None and not df_detalles.empty:
+
+        try:
+            c_sector = [c for c in df_detalles.columns if 'sect' in c.lower()][0]
+
+            sectores_lista = (
+                df_detalles[c_sector]
+                .dropna()
+                .astype(str)
+                .unique()
+                .tolist()
+            )
+
+            sectores_lista = sorted(sectores_lista)
+
+        except:
+            sectores_lista = []
+
+    else:
+        sectores_lista = []
+
+    sector_sel = st.sidebar.selectbox(
+        "Elegí el Sector a analizar:",
+        sectores_lista
+    )
 
 st.sidebar.divider()
 
@@ -155,10 +194,20 @@ elif pantalla == "🏢 Análisis por Sector":
             c_links = c_links_list[0] if c_links_list else None
             
             # Filtrado inteligente por sector
-            df_sec = df_detalles[df_detalles[c_sector].astype(str).str.lower().str.strip() == sector_sel.lower().strip()]
+         sector_busqueda = normalizar(sector_sel)
+
+df_sec = df_detalles[
+    df_detalles[c_sector]
+    .astype(str)
+    .apply(normalizar)
+    .str.contains(sector_busqueda, na=False)
+]
             
             if not df_sec.empty:
-                info_sector = df_sec.iloc[0]
+               info_sector = df_sec.iloc[0]
+
+if len(df_sec) > 1:
+    st.caption(f"Se encontraron {len(df_sec)} registros para este sector.")
                 
                 # Tarjeta de KPI principal
                 st.markdown(f"### 📌 {info_sector[c_kpi_nom]}")
@@ -179,10 +228,14 @@ elif pantalla == "🏢 Análisis por Sector":
                     
                     if c_links and pd.notna(info_sector[c_links]):
                         st.markdown("**Fuentes y portales de interés:**")
-                        for link in str(info_sector[c_links]).split(","):
-                            link = link.strip()
-                            if link.startswith("http"):
-                                st.markdown(f"🔗 [Acceder a la Fuente Externa]({link})")
+                     links = re.split(r'[,;\n]', str(info_sector[c_links]))
+
+for link in links:
+
+    link = link.strip()
+
+    if link.startswith("http"):
+        st.link_button("🔗 Abrir fuente", link)
                 
                 with t_grafico:
                     st.markdown("### 📈 Evolución Histórica del Sector")
@@ -220,8 +273,8 @@ elif pantalla == "🏢 Análisis por Sector":
                                 st.plotly_chart(fig, use_container_width=True)
                             else:
                                 st.warning("No hay datos numéricos cargados para este sector en la pestaña 'Datos_Series'.")
-                        except:
-                            st.error("Error al procesar el gráfico. Revisá las columnas de la pestaña 'Datos_Series'.")
+                    except Exception as e:
+    st.error(f"Error al procesar el gráfico: {e}")
                     else:
                         st.error("No se pudo leer la pestaña 'Datos_Series' del Google Sheet.")
                 
@@ -235,5 +288,5 @@ elif pantalla == "🏢 Análisis por Sector":
                     
             else:
                 st.warning(f"No hay novedades cargadas para el sector {sector_sel} esta semana.")
-        except Exception as e:
-            st.error("Asegurate de que la pestaña 'Detalle_Sectores' tenga las columnas básicas: Sector, KPI_Nombre, KPI_Valor, Analisis_Semanal, Precios_Referencia y Micro_Consumo.")
+    except Exception as e:
+    st.error(f"Error en Detalle_Sectores: {e}")
