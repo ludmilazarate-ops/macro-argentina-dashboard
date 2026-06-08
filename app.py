@@ -175,7 +175,7 @@ elif pantalla == "🏢 Análisis por Sector":
     if df_detalles is not None and not df_detalles.empty:
         try:
             # CONTROL ESTRICTO EN BLOQUE DE TODAS LAS COLUMNAS REQUERIDAS
-            columnas_esperadas = ["Sector", "KPI_Nombre", "KPI_Valor", "Analisis_Semanal", "Precios_Referencia", "Micro_Consumo", "Links_Fuentes"]
+            columnas_esperadas = ["Sector", "KPI_Nombre", "KPI_Valor", "Precios_Referencia", "Analisis_Semanal", "Micro_Consumo", "Links_Fuentes"]
             columnas_faltantes = [col for col in columnas_esperadas if col not in df_detalles.columns]
             
             if columnas_faltantes:
@@ -186,8 +186,8 @@ elif pantalla == "🏢 Análisis por Sector":
             c_sector = "Sector"
             c_kpi_nom = "KPI_Nombre"
             c_kpi_val = "KPI_Valor"
-            c_analisis = "Analisis_Semanal"
             c_precios = "Precios_Referencia"
+            c_analisis = "Analisis_Semanal"
             c_micro = "Micro_Consumo"
             c_links = "Links_Fuentes"
             
