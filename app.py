@@ -42,7 +42,7 @@ SHEET_ID = "1zksr6ipnnKgYQJR8_H1PLdyiglmCAAaBe29Xb-8zCoY"
 
 @st.cache_data(ttl=300) # Se actualiza automáticamente cada 5 minutos
 def cargar_pestana(nombre_pestana):
-    url = f"https://docs.google.com/spreadsheets/d/{1zksr6ipnnKgYQJR8_H1PLdyiglmCAAaBe29Xb-8zCoY}/gviz/tq?tqx=out:csv&sheet={nombre_pestana}"
+    url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={nombre_pestana}"
     try:
         return pd.read_csv(url)
     except:
