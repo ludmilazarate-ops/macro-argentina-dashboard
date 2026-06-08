@@ -83,7 +83,7 @@ if pantalla == "🏢 Análisis por Sector":
         sectores_lista = ["Comercio minorista", "Automotriz", "Construcción"]
 
     sector_sel = st.sidebar.selectbox("Elegí el Sector a analizar:", sectores_lista)
-
+st.write(sectores_lista)
 st.sidebar.divider()
 
 
@@ -179,7 +179,15 @@ elif pantalla == "🏢 Análisis por Sector":
         df_sec = df_detalles[df_detalles[c_sector].astype(str).apply(normalizar) == sector_busqueda]
         
         if not df_sec.empty:
-            info_sector = df_sec.iloc[-1]  # Trae siempre la última fila cargada de ese sector
+            for _, info_sector in df_sec.iterrows():
+
+    st.markdown(f"### 📌 {info_sector[c_kpi_nom]}")
+    st.subheader(str(info_sector[c_kpi_val]))
+
+    if c_analisis:
+        st.info(str(info_sector[c_analisis]))
+
+    st.divider()
             
             # Dibujamos las tarjetas principales si las columnas existen
             if c_kpi_nom and c_kpi_val:
