@@ -53,7 +53,7 @@ dolar_mep_vivo, dolar_oficial_vivo, brecha_viva = obtener_dolares_vivos()
 # --- CONEXIÓN A GOOGLE SHEETS (4 PESTAÑAS) ---
 SHEET_ID = "1zksr6ipnnKgYQJR8_H1PLdyiglmCAAaBe29Xb-8zCoY"
 
-@st.cache_data(ttl=600) 
+@st.cache_data(ttl=5) # Cache ultra bajo de 5 segundos para pruebas en tiempo real
 def cargar_pestana(nombre_pestana):
     url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={nombre_pestana}"
     try:
@@ -75,25 +75,14 @@ pantalla = st.sidebar.radio("Seleccioná la vista:", ["🏠 Presentación Genera
 if pantalla == "🏢 Análisis por Sector":
     st.sidebar.divider()
     if df_detalles is not None and not df_detalles.empty:
-        try:
-            c_sector = [c for c in df_detalles.columns if 'sect' in c.lower()][0]
-            sectores_lista = (
-                df_detalles[c_sector]
-                .dropna()
-                .astype(str)
-                .unique()
-                .tolist()
-            )
-            sectores_lista = sorted(sectores_lista)
-        except:
-            sectores_lista = []
+        # Buscador seguro de la columna sector
+        c_sector = next((c for c in df_detalles.columns if 'sect' in c.lower()), df_detalles.columns[0])
+        sectores_lista = df_detalles[c_sector].dropna().astype(str).str.strip().unique().tolist()
+        sectores_lista = sorted([s for s in sectores_lista if s and s.lower() != 'nan'])
     else:
-        sectores_lista = []
+        sectores_lista = ["Comercio minorista", "Automotriz", "Construcción"]
 
-    sector_sel = st.sidebar.selectbox(
-        "Elegí el Sector a analizar:",
-        sectores_lista
-    )
+    sector_sel = st.sidebar.selectbox("Elegí el Sector a analizar:", sectores_lista)
 
 st.sidebar.divider()
 
@@ -108,7 +97,6 @@ if pantalla == "🏠 Presentación General":
         st.title(f"📊 LUNES MACRO — {str(ultimo_informe['Fecha'])}")
         st.divider()
         
-        # 1. Cabecera de Impacto
         st.markdown("### 🔑 3 Claves de esta Semana")
         with st.container(border=True):
             st.markdown(f"1️⃣ {ultimo_informe['Clave_1']}")
@@ -117,13 +105,12 @@ if pantalla == "🏠 Presentación General":
             
         st.divider()
         
-        # 2. El Semáforo de la Economía Real
         st.markdown("### 🚨 Semáforo: Estado de los Sectores")
         if df_semaforo is not None and not df_semaforo.empty:
             try:
-                col_sector = [c for c in df_semaforo.columns if 'sect' in c.lower()][0]
-                col_color = [c for c in df_semaforo.columns if 'color' in c.lower()][0]
-                col_estado = [c for c in df_semaforo.columns if 'est' in c.lower() or 'text' in c.lower()][0]
+                col_sector = next((c for c in df_semaforo.columns if 'sect' in c.lower()), df_semaforo.columns[0])
+                col_color = next((c for c in df_semaforo.columns if 'color' in c.lower()), df_semaforo.columns[1])
+                col_estado = next((c for c in df_semaforo.columns if 'est' in c.lower() or 'text' in c.lower()), df_semaforo.columns[2])
                 
                 cols_semaforo = st.columns(4)
                 for index, row in df_semaforo.iterrows():
@@ -136,7 +123,6 @@ if pantalla == "🏠 Presentación General":
                 st.error("Revisá los títulos de la pestaña 'Semaforo_Sectores'.")
         st.divider()
         
-        # 3. Bloque Inflación y Tasas
         st.markdown("### 📈 Inflación y Tasas")
         col_ipc, col_equilibra = st.columns([1, 1])
         
@@ -160,7 +146,6 @@ if pantalla == "🏠 Presentación General":
         
         st.divider()
 
-        # 4. Bloque Financiero Central
         st.markdown("### 💰 Mercado Financiero y Divisas *(API en vivo)*")
         with st.container(border=True):
             cf1, cf2, cf3 = st.columns(3)
@@ -173,72 +158,72 @@ if pantalla == "🏠 Presentación General":
 
 
 # =====================================================================
-# VISTA 2: ANÁLISIS DETALLADO POR SECTOR
+# VISTA 2: ANÁLISIS DETALLADO POR SECTOR (INDESTRUCTIBLE)
 # =====================================================================
 elif pantalla == "🏢 Análisis por Sector":
     st.title(f"Sector: {sector_sel}")
     st.divider()
     
     if df_detalles is not None and not df_detalles.empty:
-        try:
-            c_sector = [c for c in df_detalles.columns if 'sect' in c.lower()][0]
-            c_kpi_nom = [c for c in df_detalles.columns if 'kpi_nom' in c.lower() or 'nom' in c.lower()][0]
-            c_kpi_val = [c for c in df_detalles.columns if 'kpi_val' in c.lower() or 'val' in c.lower()][0]
-            c_analisis = [c for c in df_detalles.columns if 'analis' in c.lower() or 'notic' in c.lower()][0]
-            c_precios = [c for c in df_detalles.columns if 'prec' in c.lower() or 'ref' in c.lower()][0]
-            c_micro = [c for c in df_detalles.columns if 'micro' in c.lower() or 'curios' in c.lower() or 'comport' in c.lower()][0]
+        # 💡 BUSQUEDA ANTIBALAS: Si no encuentra la columna, devuelve None en lugar de romper la app
+        c_sector = next((c for c in df_detalles.columns if 'sect' in c.lower()), df_detalles.columns[0])
+        c_kpi_nom = next((c for c in df_detalles.columns if 'kpi_nom' in c.lower() or 'nom' in c.lower()), None)
+        c_kpi_val = next((c for c in df_detalles.columns if 'kpi_val' in c.lower() or 'val' in c.lower()), None)
+        c_analisis = next((c for c in df_detalles.columns if 'analis' in c.lower() or 'notic' in c.lower()), None)
+        c_precios = next((c for c in df_detalles.columns if 'prec' in c.lower() or 'ref' in c.lower()), None)
+        c_micro = next((c for c in df_detalles.columns if 'micro' in c.lower() or 'curios' in c.lower() or 'comport' in c.lower()), None)
+        c_links = next((c for c in df_detalles.columns if 'link' in c.lower() or 'fuent' in c.lower()), None)
+        
+        # Filtrado por coincidencia exacta de texto normalizado
+        sector_busqueda = normalizar(sector_sel)
+        df_sec = df_detalles[df_detalles[c_sector].astype(str).apply(normalizar) == sector_busqueda]
+        
+        if not df_sec.empty:
+            info_sector = df_sec.iloc[-1]  # Trae siempre la última fila cargada de ese sector
             
-            c_links_list = [c for c in df_detalles.columns if 'link' in c.lower() or 'fuent' in c.lower()]
-            c_links = c_links_list[0] if c_links_list else None
-            
-            sector_busqueda = normalizar(sector_sel)
-            df_sec = df_detalles[df_detalles[c_sector].astype(str).apply(normalizar).str.contains(sector_busqueda, na=False)]
-            
-            if not df_sec.empty:
-                info_sector = df_sec.iloc[-1]  # Selecciona siempre el registro más reciente
-
-                if len(df_sec) > 1:
-                    st.caption(f"Se encontraron {len(df_sec)} registros para este sector. Mostrando el más reciente.")
-                
+            # Dibujamos las tarjetas principales si las columnas existen
+            if c_kpi_nom and c_kpi_val:
                 st.markdown(f"### 📌 {info_sector[c_kpi_nom]}")
                 st.subheader(str(info_sector[c_kpi_val]))
                 st.divider()
-                
-                t_noticias, t_grafico, t_precios, t_micro = st.tabs([
-                    "📰 Novedades y Análisis", 
-                    "📊 Serie de Tiempo",
-                    "📋 Pizarra de Precios Ref.", 
-                    "🔍 Micro-Consumo / Curiosidades"
-                ])
-                
-                with t_noticias:
+            
+            # Armamos las pestañas internas de forma dinámica
+            t_noticias, t_grafico, t_precios, t_micro = st.tabs([
+                "📰 Novedades y Análisis", 
+                "📊 Serie de Tiempo",
+                "📋 Pizarra de Precios Ref.", 
+                "🔍 Micro-Consumo / Curiosidades"
+            ])
+            
+            with t_noticias:
+                if c_analisis:
                     st.markdown("### Análisis de Coyuntura Semanal")
                     st.info(str(info_sector[c_analisis]))
-                    
-                    if c_links and pd.notna(info_sector[c_links]):
-                        st.markdown("**Fuentes y portales de interés:**")
-                        links = re.split(r'[,;\n]', str(info_sector[c_links]))
-                        for link in links:
-                            link = link.strip()
-                            if link.startswith("http"):
-                                st.link_button("🔗 Abrir fuente", link)
+                else:
+                    st.warning("Falta la columna 'Analisis_Semanal' en tu Sheets.")
                 
-                with t_grafico:
-                    st.markdown("### 📈 Evolución Histórica del Sector")
-                    if df_series is None or df_series.empty:
-                        st.error("No se pudo leer la pestaña 'Datos_Series' del Google Sheet.")
-                    else:
-                        try:
-                            c_ser_sec = [c for c in df_series.columns if 'sect' in c.lower()][0]
-                            c_ser_fec = [c for c in df_series.columns if 'fech' in c.lower() or 'date' in c.lower()][0]
-                            c_ser_val = [c for c in df_series.columns if 'val' in c.lower() or 'indic' in c.lower() or 'num' in c.lower()][-1]
-                            
-                            df_geo = df_series[df_series[c_ser_sec].astype(str).apply(normalizar).str.contains(sector_busqueda, na=False)].copy()
+                if c_links and pd.notna(info_sector[c_links]):
+                    st.markdown("**Fuentes y portales de interés:**")
+                    links = re.split(r'[,;\n]', str(info_sector[c_links]))
+                    for link in links:
+                        link = link.strip()
+                        if link.startswith("http"):
+                            st.link_button("🔗 Abrir fuente", link)
+            
+            with t_grafico:
+                st.markdown("### 📈 Evolución Histórica del Sector")
+                if df_series is not None and not df_series.empty:
+                    try:
+                        c_ser_sec = next((c for c in df_series.columns if 'sect' in c.lower()), df_series.columns[0])
+                        c_ser_fec = next((c for c in df_series.columns if 'fech' in c.lower() or 'date' in c.lower()), None)
+                        c_ser_val = next((c for c in df_series.columns if 'val' in c.lower() or 'indic' in c.lower() or 'num' in c.lower()), None)
+                        
+                        if c_ser_fec and c_ser_val:
+                            df_geo = df_series[df_series[c_ser_sec].astype(str).apply(normalizar) == sector_busqueda].copy()
                             
                             if not df_geo.empty:
                                 df_geo[c_ser_fec] = pd.to_datetime(df_geo[c_ser_fec])
                                 df_geo = df_geo.sort_values(by=c_ser_fec)
-                                
                                 df_geo[c_ser_val] = df_geo[c_ser_val].astype(str).str.replace('%', '', regex=False).str.replace(',', '.', regex=False)
                                 df_geo[c_ser_val] = pd.to_numeric(df_geo[c_ser_val], errors='coerce')
                                 
@@ -252,29 +237,32 @@ elif pantalla == "🏢 Análisis por Sector":
                                     fill='tozeroy',
                                     fillcolor='rgba(0, 131, 176, 0.05)'
                                 ))
-                                fig.update_layout(
-                                    template="plotly_white", 
-                                    margin=dict(l=20, r=20, t=20, b=20),
-                                    xaxis_title="Período / Mes",
-                                    yaxis_title="Valor"
-                                )
+                                fig.update_layout(template="plotly_white", margin=dict(l=20, r=20, t=20, b=20), xaxis_title="Período", yaxis_title="Valor")
                                 st.plotly_chart(fig, use_container_width=True)
                             else:
-                                st.warning("No hay datos numéricos cargados para este sector en la pestaña 'Datos_Series'.")
-                        except Exception as e:
-                            st.error(f"Error al procesar el gráfico: {e}")
-                
-                with t_precios:
+                                st.warning("No hay datos numéricos en la pestaña 'Datos_Series' para este sector.")
+                        else:
+                            st.warning("Faltan columnas de Fecha o Valor en la pestaña 'Datos_Series'.")
+                    except Exception as e:
+                        st.error(f"Error al procesar el gráfico: {e}")
+                else:
+                    st.error("No se pudo leer la pestaña 'Datos_Series' del Google Sheet.")
+            
+            with t_precios:
+                if c_precios:
                     st.markdown("### Valores y Costos de Referencia en el Mercado")
                     st.text(str(info_sector[c_precios]))
-                    
-                with t_micro:
+                else:
+                    st.warning("Falta la columna 'Precios_Referencia' en tu Sheets.")
+                
+            with t_micro:
+                if c_micro and pd.notna(info_sector[c_micro]):
                     st.markdown("### Datos de Comportamiento y Consumo Específico")
                     st.warning(str(info_sector[c_micro]))
-                    
-            else:
-                st.warning(f"No hay novedades cargadas para el sector {sector_sel} esta semana.")
-        except Exception as e:
-            st.error(f"Error en Detalle_Sectores: {e}")
+                else:
+                    st.info("No hay columna o datos de 'Micro_Consumo' cargados para este sector.")
+                
+        else:
+            st.warning(f"No se encontraron novedades en el Sheets para el sector: {sector_sel}")
     else:
         st.error("No se pudo leer la pestaña 'Detalle_Sectores' del Google Sheet.")
