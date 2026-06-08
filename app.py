@@ -55,11 +55,10 @@ SHEET_ID = "1zksr6ipnnKgYQJR8_H1PLdyiglmCAAaBe29Xb-8zCoY"
 
 @st.cache_data(ttl=5) 
 def cargar_pestana(nombre_pestana):
-    # 💡 CORRECCIÓN: Volvemos al endpoint que SÍ lee por nombre, pero protegiendo la lectura de textos largos
-    url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={nombre_pestana}"
+    # 💡 SOLUCIÓN: Forzamos &headers=1 para que Google no amontone tus filas adentro de los títulos
+    url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&headers=1&sheet={nombre_pestana}"
     try:
-        # Forzamos a que interprete correctamente las comillas y saltos de línea de las celdas
-        return pd.read_csv(url, escapechar='\\', encoding='utf-8')
+        return pd.read_csv(url)
     except:
         return None
 
