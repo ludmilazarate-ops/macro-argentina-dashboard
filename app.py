@@ -38,6 +38,7 @@ dolar_mep_vivo, dolar_oficial_vivo, brecha_viva = obtener_dolares_vivos()
 
 
 # --- CONEXIÓN A GOOGLE SHEETS (4 PESTAÑAS) ---
+# CAMBIÁ ESTO: Poné el ID de tu Sheet acá abajo entre las comillas
 SHEET_ID = "1zksr6ipnnKgYQJR8_H1PLdyiglmCAAaBe29Xb-8zCoY"
 
 @st.cache_data(ttl=300) # Se actualiza automáticamente cada 5 minutos
@@ -59,7 +60,7 @@ df_series = cargar_pestana("Datos_Series")
 st.sidebar.title("📊 LUNES MACRO")
 pantalla = st.sidebar.radio("Seleccioná la vista:", ["🏠 Presentación General", "🏢 Análisis por Sector"])
 
-# 💡 CAMBIO AQUÍ: Si elige "Análisis por Sector", el selector aparece ACÁ, antes del USD
+# Si elige "Análisis por Sector", el selector aparece acá, antes del USD
 if pantalla == "🏢 Análisis por Sector":
     st.sidebar.divider()
     sectores_lista = ["Comercio minorista", "Comercio mayorista", "Gastronomía", "Construcción", "Servicios / Indumentaria", "Industria", "Automotriz", "Alimentos / Combustibles"]
@@ -67,7 +68,7 @@ if pantalla == "🏢 Análisis por Sector":
 
 st.sidebar.divider()
 
-# Mostrar SIEMPRE los dólares automáticos abajo de todo en la barra lateral
+# Mostrar dólares automáticos abajo de todo en la barra lateral
 st.sidebar.markdown("### 💰 Mercado y Divisas *(En vivo)*")
 with st.sidebar.container(border=True):
     st.sidebar.metric(label="Dólar MEP", value=dolar_mep_vivo)
@@ -85,7 +86,7 @@ if pantalla == "🏠 Presentación General":
         st.divider()
         
         # 1. Cabecera de Impacto: Las 3 Claves de la semana
-        st.markdown("### 3 Claves de esta Semana")
+        st.markdown("### 🔑 3 Claves de esta Semana")
         with st.container(border=True):
             st.markdown(f"1️⃣ {ultimo_informe['Clave_1']}")
             st.markdown(f"2️⃣ {ultimo_informe['Clave_2']}")
@@ -93,16 +94,23 @@ if pantalla == "🏠 Presentación General":
             
         st.divider()
         
-        # 2. El Semáforo de la Economía Real
+        # 2. El Semáforo de la Economía Real (Versión inteligente antibalas)
         st.markdown("### 🚨 Semáforo: Estado de los Sectores")
         if df_semaforo is not None and not df_semaforo.empty:
-            cols_semaforo = st.columns(4)
-            for index, row in df_semaforo.iterrows():
-                col_idx = index % 4
-                with cols_semaforo[col_idx]:
-                    color_str = str(row['Color']).lower().strip()
-                    color_emoji = "🔴" if "rojo" in color_str else "🟡" if "amarillo" in color_str else "🟢"
-                    st.metric(label=f"{color_emoji} {row['Sector']}", value=str(row['Estado (Texto que se lee)']))
+            try:
+                col_sector = [c for c in df_semaforo.columns if 'sect' in c.lower()][0]
+                col_color = [c for c in df_semaforo.columns if 'color' in c.lower()][0]
+                col_estado = [c for c in df_semaforo.columns if 'est' in c.lower() or 'text' in c.lower()][0]
+                
+                cols_semaforo = st.columns(4)
+                for index, row in df_semaforo.iterrows():
+                    col_idx = index % 4
+                    with cols_semaforo[col_idx]:
+                        color_str = str(row[col_color]).lower().strip()
+                        color_emoji = "🔴" if "rojo" in color_str else "🟡" if "amarillo" in color_str else "🟢"
+                        st.metric(label=f"{color_emoji} {row[col_sector]}", value=str(row[col_estado]))
+            except Exception as e:
+                st.error("Asegurate de que la pestaña 'Semaforo_Sectores' tenga las columnas: Sector, Estado y Color.")
         st.divider()
         
         # 3. Bloque Inflación (Nacional vs Tandil + Alta Frecuencia)
@@ -135,7 +143,6 @@ if pantalla == "🏠 Presentación General":
 # VISTA 2: ANÁLISIS DETALLADO POR SECTOR
 # =====================================================================
 elif pantalla == "🏢 Análisis por Sector":
-    # El selector ya se ejecutó en la barra lateral, así que procesamos directamente con 'sector_sel'
     st.title(f"Sector: {sector_sel}")
     st.divider()
     
