@@ -70,8 +70,8 @@ df_series = cargar_pestana("Datos_Series")
 
 
 # --- NAVEGACIÓN EN LA BARRA LATERAL ---
-st.sidebar.title("📊 LUNES MACRO")
-pantalla = st.sidebar.radio("Seleccioná la vista:", ["🏠 Presentación General", "🏢 Análisis por Sector"])
+st.sidebar.title("📊Unidad de analisis")
+pantalla = st.sidebar.radio("Seleccioná la vista:", ["🏠 Economía General", "🏢 Análisis por Sector"])
 
 if pantalla == "🏢 Análisis por Sector":
     st.sidebar.divider()
@@ -103,11 +103,11 @@ if pantalla == "🏠 Presentación General":
     if df_home is not None and not df_home.empty:
         ultimo_informe = df_home.iloc[0]
         
-        st.title(f"📊 LUNES MACRO — {str(ultimo_informe['Fecha'])}")
+        st.title(f"Datos de la economía General — {str(ultimo_informe['Fecha'])}")
         st.divider()
         
         # 1. Cabecera de Impacto
-        st.markdown("### 🔑 3 Claves de esta Semana")
+        st.markdown("### 3 Claves de esta Semana")
         with st.container(border=True):
             st.markdown(f"1️⃣ {ultimo_informe['Clave_1']}")
             st.markdown(f"2️⃣ {ultimo_informe['Clave_2']}")
