@@ -55,10 +55,11 @@ SHEET_ID = "1zksr6ipnnKgYQJR8_H1PLdyiglmCAAaBe29Xb-8zCoY"
 
 @st.cache_data(ttl=5) 
 def cargar_pestana(nombre_pestana):
-    # 💡 SOLUCIÓN: Cambiamos al motor oficial de exportación de Google, indestructible con textos multilínea
-    url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&sheet={nombre_pestana}"
+    # 💡 CORRECCIÓN: Volvemos al endpoint que SÍ lee por nombre, pero protegiendo la lectura de textos largos
+    url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={nombre_pestana}"
     try:
-        return pd.read_csv(url)
+        # Forzamos a que interprete correctamente las comillas y saltos de línea de las celdas
+        return pd.read_csv(url, escapechar='\\', encoding='utf-8')
     except:
         return None
 
@@ -76,12 +77,13 @@ pantalla = st.sidebar.radio("Seleccioná la vista:", ["🏠 Presentación Genera
 if pantalla == "🏢 Análisis por Sector":
     st.sidebar.divider()
     if df_detalles is not None and not df_detalles.empty:
-        # Validación estricta de la columna Sector para el menú
+        # Validación estricta de la columna Sector para el menú desplegable
         if "Sector" in df_detalles.columns:
             c_sector = "Sector"
         else:
-            st.error(f"No encontré la columna Sector en la pestaña 'Detalle_Sectores'. Columnas detectadas: {df_detalles.columns.tolist()}")
-            st.write("👀 **Primeras filas detectadas:**")
+            st.error(f"🚨 Error de Estructura: No encontré la columna 'Sector' en la pestaña 'Detalle_Sectores'.")
+            st.write("📋 **Columnas que está leyendo Python actualmente:**", df_detalles.columns.tolist())
+            st.write("👀 **Primeras filas de datos detectadas:**")
             st.dataframe(df_detalles.head())
             st.stop()
             
