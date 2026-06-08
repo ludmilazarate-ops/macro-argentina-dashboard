@@ -160,7 +160,7 @@ if pantalla == "🏠 Presentación General":
         
         st.divider()
 
-        # 4. 💡 BLOQUE FINANCIERO CENTRAL (¡Acomodado acá!)
+        # 4. Bloque Financiero Central
         st.markdown("### 💰 Mercado Financiero y Divisas *(API en vivo)*")
         with st.container(border=True):
             cf1, cf2, cf3 = st.columns(3)
@@ -225,7 +225,9 @@ elif pantalla == "🏢 Análisis por Sector":
                 
                 with t_grafico:
                     st.markdown("### 📈 Evolución Histórica del Sector")
-                    if df_series is not None and not df_series.empty:
+                    if df_series is None or df_series.empty:
+                        st.error("No se pudo leer la pestaña 'Datos_Series' del Google Sheet.")
+                    else:
                         try:
                             c_ser_sec = [c for c in df_series.columns if 'sect' in c.lower()][0]
                             c_ser_fec = [c for c in df_series.columns if 'fech' in c.lower() or 'date' in c.lower()][0]
@@ -261,8 +263,6 @@ elif pantalla == "🏢 Análisis por Sector":
                                 st.warning("No hay datos numéricos cargados para este sector en la pestaña 'Datos_Series'.")
                         except Exception as e:
                             st.error(f"Error al procesar el gráfico: {e}")
-                    else:
-                        st.error("No se pudo leer la pestaña 'Datos_Series' del Google Sheet.")
                 
                 with t_precios:
                     st.markdown("### Valores y Costos de Referencia en el Mercado")
@@ -275,3 +275,6 @@ elif pantalla == "🏢 Análisis por Sector":
             else:
                 st.warning(f"No hay novedades cargadas para el sector {sector_sel} esta semana.")
         except Exception as e:
+            st.error(f"Error en Detalle_Sectores: {e}")
+    else:
+        st.error("No se pudo leer la pestaña 'Detalle_Sectores' del Google Sheet.")
