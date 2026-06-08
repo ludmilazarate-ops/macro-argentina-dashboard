@@ -53,11 +53,12 @@ dolar_mep_vivo, dolar_oficial_vivo, brecha_viva = obtener_dolares_vivos()
 # --- CONEXIÓN A GOOGLE SHEETS (4 PESTAÑAS) ---
 SHEET_ID = "1zksr6ipnnKgYQJR8_H1PLdyiglmCAAaBe29Xb-8zCoY"
 
-@st.cache_data(ttl=5) # Cache en 5 segundos para pruebas en tiempo real
+@st.cache_data(ttl=5) 
 def cargar_pestana(nombre_pestana):
     url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={nombre_pestana}"
     try:
-        return pd.read_csv(url)
+        df = pd.read_csv(url)
+        return df
     except:
         return None
 
@@ -74,22 +75,29 @@ pantalla = st.sidebar.radio("Seleccioná la vista:", ["🏠 Presentación Genera
 
 if pantalla == "🏢 Análisis por Sector":
     st.sidebar.divider()
+    
     if df_detalles is not None and not df_detalles.empty:
-        # Validación estricta de la columna Sector para el menú
+        # 🔍 TU PRUEBA: Si "Sector" no está arriba, activamos alertas visuales de estructura
         if "Sector" in df_detalles.columns:
             c_sector = "Sector"
+            sectores_lista = df_detalles[c_sector].dropna().astype(str).str.strip().unique().tolist()
+            sectores_lista = sorted([s for s in sectores_lista if s and s.lower() != 'nan'])
         else:
-            st.error(f"No encontré la columna Sector en la pestaña 'Detalle_Sectores'. Columnas detectadas: {df_detalles.columns.tolist()}")
+            # Pantalla de auxilio si los encabezados se desplazaron
+            st.error("🚨 error de lectura: La columna 'Sector' no está en los títulos de la tabla.")
+            st.write("📋 **Tus columnas detectadas actuales son:**", df_detalles.columns.tolist())
+            st.write("👀 **Así se ven las primeras filas de tu Sheets según Python:**")
+            st.dataframe(df_detalles.head())
+            st.info("💡 **Tip de solución:** Si ves que tus títulos reales aparecen abajo en la fila 0 o 1, avísame para aplicar un 'skiprows' o 'header' en la lectura.")
             st.stop()
             
-        sectores_lista = df_detalles[c_sector].dropna().astype(str).str.strip().unique().tolist()
-        sectores_lista = sorted([s for s in sectores_lista if s and s.lower() != 'nan'])
+        # 🔍 TU PRUEBA EN SIDEBAR: Muestra qué sectores se están aislando antes del selectbox
+        st.sidebar.write("⚡ *Sectores detectados en la columna:*")
+        st.sidebar.code(str(sectores_lista))
     else:
         sectores_lista = ["Comercio minorista", "Automotriz", "Construcción"]
 
     sector_sel = st.sidebar.selectbox("Elegí el Sector a analizar:", sectores_lista)
-    # 💡 CAMBIO AQUÍ: Ahora está perfectamente tabulado adentro de la pantalla de sectores
-    st.write(sectores_lista)
 
 st.sidebar.divider()
 
@@ -104,7 +112,6 @@ if pantalla == "🏠 Presentación General":
         st.title(f"📊 LUNES MACRO — {str(ultimo_informe['Fecha'])}")
         st.divider()
         
-        # 1. Cabecera de Impacto
         st.markdown("### 🔑 3 Claves de esta Semana")
         with st.container(border=True):
             st.markdown(f"1️⃣ {ultimo_informe['Clave_1']}")
@@ -113,7 +120,6 @@ if pantalla == "🏠 Presentación General":
             
         st.divider()
         
-        # 2. El Semáforo de la Economía Real
         st.markdown("### 🚨 Semáforo: Estado de los Sectores")
         if df_semaforo is not None and not df_semaforo.empty:
             try:
@@ -132,7 +138,6 @@ if pantalla == "🏠 Presentación General":
                 st.error("Revisá los títulos de la pestaña 'Semaforo_Sectores'.")
         st.divider()
         
-        # 3. Bloque Inflación y Tasas
         st.markdown("### 📈 Inflación y Tasas")
         col_ipc, col_equilibra = st.columns([1, 1])
         
@@ -176,15 +181,14 @@ elif pantalla == "🏢 Análisis por Sector":
     
     if df_detalles is not None and not df_detalles.empty:
         try:
-            # CONTROL ESTRICTO EN BLOQUE DE TODAS LAS COLUMNAS REQUERIDAS
+            # CONTROL ESTRICTO DE COLUMNAS ASIGNADAS DIRECTAMENTE
             columnas_esperadas = ["Sector", "KPI_Nombre", "KPI_Valor", "Precios_Referencia", "Analisis_Semanal", "Micro_Consumo", "Links_Fuentes"]
             columnas_faltantes = [col for col in columnas_esperadas if col not in df_detalles.columns]
             
             if columnas_faltantes:
-                st.error(f"Error Estricto: Faltan las siguientes columnas obligatorias en la pestaña 'Detalle_Sectores': {columnas_faltantes}. Columnas detectadas actualmente en tu planilla: {df_detalles.columns.tolist()}")
+                st.error(f"Faltan columnas en la pestaña 'Detalle_Sectores': {columnas_faltantes}")
                 st.stop()
 
-            # Asignación directa y segura de variables
             c_sector = "Sector"
             c_kpi_nom = "KPI_Nombre"
             c_kpi_val = "KPI_Valor"
