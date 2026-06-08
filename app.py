@@ -194,14 +194,14 @@ elif pantalla == "🏢 Análisis por Sector":
             c_links = c_links_list[0] if c_links_list else None
             
             # Filtrado inteligente por sector
-         sector_busqueda = normalizar(sector_sel)
+            sector_busqueda = normalizar(sector_sel)
 
-df_sec = df_detalles[
-    df_detalles[c_sector]
-    .astype(str)
-    .apply(normalizar)
-    .str.contains(sector_busqueda, na=False)
-]
+            df_sec = df_detalles[
+                df_detalles[c_sector]
+                .astype(str)
+                .apply(normalizar)
+                .str.contains(sector_busqueda, na=False)
+             ]
             
             if not df_sec.empty:
                info_sector = df_sec.iloc[0]
