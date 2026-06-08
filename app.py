@@ -59,9 +59,16 @@ df_series = cargar_pestana("Datos_Series")
 # --- NAVEGACIÓN EN LA BARRA LATERAL ---
 st.sidebar.title("📊 LUNES MACRO")
 pantalla = st.sidebar.radio("Seleccioná la vista:", ["🏠 Presentación General", "🏢 Análisis por Sector"])
+
+# 💡 CAMBIO AQUÍ: Si elige "Análisis por Sector", el selector aparece ACÁ, antes del USD
+if pantalla == "🏢 Análisis por Sector":
+    st.sidebar.divider()
+    sectores_lista = ["Comercio minorista", "Comercio mayorista", "Gastronomía", "Construcción", "Servicios / Indumentaria", "Industria", "Automotriz", "Alimentos / Combustibles"]
+    sector_sel = st.sidebar.selectbox("Elegí el Sector a analizar:", sectores_lista)
+
 st.sidebar.divider()
 
-# Mostrar siempre los dólares automáticos en la barra lateral
+# Mostrar SIEMPRE los dólares automáticos abajo de todo en la barra lateral
 st.sidebar.markdown("### 💰 Mercado y Divisas *(En vivo)*")
 with st.sidebar.container(border=True):
     st.sidebar.metric(label="Dólar MEP", value=dolar_mep_vivo)
@@ -94,7 +101,6 @@ if pantalla == "🏠 Presentación General":
             for index, row in df_semaforo.iterrows():
                 col_idx = index % 4
                 with cols_semaforo[col_idx]:
-                    # Traducimos tu texto de color del Excel a emojis visuales
                     color_str = str(row['Color']).lower().strip()
                     color_emoji = "🔴" if "rojo" in color_str else "🟡" if "amarillo" in color_str else "🟢"
                     st.metric(label=f"{color_emoji} {row['Sector']}", value=str(row['Estado (Texto que se lee)']))
@@ -130,9 +136,7 @@ if pantalla == "🏠 Presentación General":
 # VISTA 2: ANÁLISIS DETALLADO POR SECTOR
 # =====================================================================
 elif pantalla == "🏢 Análisis por Sector":
-    sectores_lista = ["Comercio minorista", "Comercio mayorista", "Gastronomía", "Construcción", "Servicios / Indumentaria", "Industria", "Automotriz", "Alimentos / Combustibles"]
-    sector_sel = st.sidebar.selectbox("Elegí el Sector:", sectores_lista)
-    
+    # El selector ya se ejecutó en la barra lateral, así que procesamos directamente con 'sector_sel'
     st.title(f"Sector: {sector_sel}")
     st.divider()
     
@@ -147,7 +151,7 @@ elif pantalla == "🏢 Análisis por Sector":
             st.subheader(str(info_sector['KPI_Valor']))
             st.divider()
             
-            # Las 4 pestañas internas solicitadas
+            # Las 4 pestañas internas
             t_noticias, t_grafico, t_precios, t_micro = st.tabs([
                 "📰 Novedades y Análisis", 
                 "📊 Serie de Tiempo",
@@ -173,15 +177,12 @@ elif pantalla == "🏢 Análisis por Sector":
                 if df_series is not None and not df_series.empty:
                     df_geo = df_series[df_series['Sector'] == sector_sel].copy()
                     if not df_geo.empty:
-                        # Formateamos cronológicamente la fecha
                         df_geo['Fecha'] = pd.to_datetime(df_geo['Fecha'])
                         df_geo = df_geo.sort_values(by='Fecha')
                         
-                        # Limpiamos formatos raros de texto a número para que Plotly grafique bien
                         df_geo['Valor'] = df_geo['Valor'].astype(str).str.replace('%', '', regex=False).str.replace(',', '.', regex=False)
                         df_geo['Valor'] = pd.to_numeric(df_geo['Valor'], errors='coerce')
                         
-                        # Dibujamos el gráfico premium de área sombreada
                         fig = go.Figure()
                         fig.add_trace(go.Scatter(
                             x=df_geo['Fecha'], 
