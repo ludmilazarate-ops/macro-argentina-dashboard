@@ -10,7 +10,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Estilos estéticos para semáforos y solapas
+# Estilos estéticos para solapas
 st.markdown("""
     <style>
     .stTabs [data-baseweb="tab-list"] { gap: 10px; }
@@ -32,16 +32,15 @@ def obtener_dolares_vivos():
         brecha = ((mep / oficial) - 1) * 100
         return f"${mep:,.2f}", f"${oficial:,.2f}", f"{brecha:.1f}%"
     except:
-        return "$1.424,34", "$1.415,00", "0.6%" # Respaldo por si cae la API externa
+        return "$1.424,34", "$1.415,00", "0.6%" 
 
 dolar_mep_vivo, dolar_oficial_vivo, brecha_viva = obtener_dolares_vivos()
 
 
 # --- CONEXIÓN A GOOGLE SHEETS (4 PESTAÑAS) ---
-# CAMBIÁ ESTO: Poné el ID de tu Sheet acá abajo entre las comillas
 SHEET_ID = "1zksr6ipnnKgYQJR8_H1PLdyiglmCAAaBe29Xb-8zCoY"
 
-@st.cache_data(ttl=300) # Se actualiza automáticamente cada 5 minutos
+@st.cache_data(ttl=300) 
 def cargar_pestana(nombre_pestana):
     url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={nombre_pestana}"
     try:
@@ -49,7 +48,7 @@ def cargar_pestana(nombre_pestana):
     except:
         return None
 
-# Cargamos las 4 fuentes de datos desde tu Sheets
+# Cargamos las 4 fuentes de datos
 df_home = cargar_pestana("Home_General")
 df_semaforo = cargar_pestana("Semaforo_Sectores")
 df_detalles = cargar_pestana("Detalle_Sectores")
@@ -60,7 +59,6 @@ df_series = cargar_pestana("Datos_Series")
 st.sidebar.title("📊 LUNES MACRO")
 pantalla = st.sidebar.radio("Seleccioná la vista:", ["🏠 Presentación General", "🏢 Análisis por Sector"])
 
-# Si elige "Análisis por Sector", el selector aparece acá, antes del USD
 if pantalla == "🏢 Análisis por Sector":
     st.sidebar.divider()
     sectores_lista = ["Comercio minorista", "Comercio mayorista", "Gastronomía", "Construcción", "Servicios / Indumentaria", "Industria", "Automotriz", "Alimentos / Combustibles"]
@@ -68,7 +66,6 @@ if pantalla == "🏢 Análisis por Sector":
 
 st.sidebar.divider()
 
-# Mostrar dólares automáticos abajo de todo en la barra lateral
 st.sidebar.markdown("### 💰 Mercado y Divisas *(En vivo)*")
 with st.sidebar.container(border=True):
     st.sidebar.metric(label="Dólar MEP", value=dolar_mep_vivo)
@@ -85,7 +82,6 @@ if pantalla == "🏠 Presentación General":
         st.title(f"📊 LUNES MACRO — {str(ultimo_informe['Fecha'])}")
         st.divider()
         
-        # 1. Cabecera de Impacto: Las 3 Claves de la semana
         st.markdown("### 🔑 3 Claves de esta Semana")
         with st.container(border=True):
             st.markdown(f"1️⃣ {ultimo_informe['Clave_1']}")
@@ -94,7 +90,6 @@ if pantalla == "🏠 Presentación General":
             
         st.divider()
         
-        # 2. El Semáforo de la Economía Real (Versión inteligente antibalas)
         st.markdown("### 🚨 Semáforo: Estado de los Sectores")
         if df_semaforo is not None and not df_semaforo.empty:
             try:
@@ -109,11 +104,10 @@ if pantalla == "🏠 Presentación General":
                         color_str = str(row[col_color]).lower().strip()
                         color_emoji = "🔴" if "rojo" in color_str else "🟡" if "amarillo" in color_str else "🟢"
                         st.metric(label=f"{color_emoji} {row[col_sector]}", value=str(row[col_estado]))
-            except Exception as e:
-                st.error("Asegurate de que la pestaña 'Semaforo_Sectores' tenga las columnas: Sector, Estado y Color.")
+            except:
+                st.error("Revisá los títulos de la pestaña 'Semaforo_Sectores'.")
         st.divider()
         
-        # 3. Bloque Inflación (Nacional vs Tandil + Alta Frecuencia)
         st.markdown("### 📈 Inflación y Tasas")
         col_ipc, col_equilibra = st.columns([1, 1])
         
@@ -140,86 +134,106 @@ if pantalla == "🏠 Presentación General":
 
 
 # =====================================================================
-# VISTA 2: ANÁLISIS DETALLADO POR SECTOR
+# VISTA 2: ANÁLISIS DETALLADO POR SECTOR (VERSIÓN ANTIBALAS)
 # =====================================================================
 elif pantalla == "🏢 Análisis por Sector":
     st.title(f"Sector: {sector_sel}")
     st.divider()
     
     if df_detalles is not None and not df_detalles.empty:
-        df_sec = df_detalles[df_detalles['Sector'] == sector_sel]
-        
-        if not df_sec.empty:
-            info_sector = df_sec.iloc[0]
+        try:
+            # Detectamos las columnas de la pestaña Detalle_Sectores de forma inteligente aproximada
+            c_sector = [c for c in df_detalles.columns if 'sect' in c.lower()][0]
+            c_kpi_nom = [c for c in df_detalles.columns if 'kpi_nom' in c.lower() or 'nom' in c.lower()][0]
+            c_kpi_val = [c for c in df_detalles.columns if 'kpi_val' in c.lower() or 'val' in c.lower()][0]
+            c_analisis = [c for c in df_detalles.columns if 'analis' in c.lower() or 'notic' in c.lower()][0]
+            c_precios = [c for c in df_detalles.columns if 'prec' in c.lower() or 'ref' in c.lower()][0]
+            c_micro = [c for c in df_detalles.columns if 'micro' in c.lower() or 'curios' in c.lower() or 'comport' in c.lower()][0]
             
-            # Tarjeta de KPI principal del sector
-            st.markdown(f"### 📌 {info_sector['KPI_Nombre']}")
-            st.subheader(str(info_sector['KPI_Valor']))
-            st.divider()
+            # Intentamos buscar la columna de links si existe, sino queda vacía
+            c_links_list = [c for c in df_detalles.columns if 'link' in c.lower() or 'fuent' in c.lower()]
+            c_links = c_links_list[0] if c_links_list else None
             
-            # Las 4 pestañas internas
-            t_noticias, t_grafico, t_precios, t_micro = st.tabs([
-                "📰 Novedades y Análisis", 
-                "📊 Serie de Tiempo",
-                "📋 Pizarra de Precios Ref.", 
-                "🔍 Micro-Consumo / Curiosidades"
-            ])
+            # Filtrado inteligente por sector
+            df_sec = df_detalles[df_detalles[c_sector].astype(str).str.lower().str.strip() == sector_sel.lower().strip()]
             
-            # ---- SOLAPA 1: NOVEDADES Y ANÁLISIS ----
-            with t_noticias:
-                st.markdown("### Análisis de Coyuntura Semanal")
-                st.info(str(info_sector['Analisis_Semanal']))
+            if not df_sec.empty:
+                info_sector = df_sec.iloc[0]
                 
-                if pd.notna(info_sector['Links_Fuentes']):
-                    st.markdown("**Fuentes y portales de interés:**")
-                    for link in str(info_sector['Links_Fuentes']).split(","):
-                        link = link.strip()
-                        if link.startswith("http"):
-                            st.markdown(f"🔗 [Acceder a la Fuente Externa]({link})")
-            
-            # ---- SOLAPA 2: SERIE DE TIEMPO (Gráficos interactivos) ----
-            with t_grafico:
-                st.markdown("### 📈 Evolución Histórica del Sector")
-                if df_series is not None and not df_series.empty:
-                    df_geo = df_series[df_series['Sector'] == sector_sel].copy()
-                    if not df_geo.empty:
-                        df_geo['Fecha'] = pd.to_datetime(df_geo['Fecha'])
-                        df_geo = df_geo.sort_values(by='Fecha')
-                        
-                        df_geo['Valor'] = df_geo['Valor'].astype(str).str.replace('%', '', regex=False).str.replace(',', '.', regex=False)
-                        df_geo['Valor'] = pd.to_numeric(df_geo['Valor'], errors='coerce')
-                        
-                        fig = go.Figure()
-                        fig.add_trace(go.Scatter(
-                            x=df_geo['Fecha'], 
-                            y=df_geo['Valor'], 
-                            mode='lines+markers', 
-                            name=sector_sel, 
-                            line=dict(color='#0083B0', width=3),
-                            fill='tozeroy',
-                            fillcolor='rgba(0, 131, 176, 0.05)'
-                        ))
-                        fig.update_layout(
-                            template="plotly_white", 
-                            margin=dict(l=20, r=20, t=20, b=20),
-                            xaxis_title="Período / Mes",
-                            yaxis_title="Valor / Índice"
-                        )
-                        st.plotly_chart(fig, use_container_width=True)
+                # Tarjeta de KPI principal
+                st.markdown(f"### 📌 {info_sector[c_kpi_nom]}")
+                st.subheader(str(info_sector[c_kpi_val]))
+                st.divider()
+                
+                # Las 4 solapas internas
+                t_noticias, t_grafico, t_precios, t_micro = st.tabs([
+                    "📰 Novedades y Análisis", 
+                    "📊 Serie de Tiempo",
+                    "📋 Pizarra de Precios Ref.", 
+                    "🔍 Micro-Consumo / Curiosidades"
+                ])
+                
+                with t_noticias:
+                    st.markdown("### Análisis de Coyuntura Semanal")
+                    st.info(str(info_sector[c_analisis]))
+                    
+                    if c_links and pd.notna(info_sector[c_links]):
+                        st.markdown("**Fuentes y portales de interés:**")
+                        for link in str(info_sector[c_links]).split(","):
+                            link = link.strip()
+                            if link.startswith("http"):
+                                st.markdown(f"🔗 [Acceder a la Fuente Externa]({link})")
+                
+                with t_grafico:
+                    st.markdown("### 📈 Evolución Histórica del Sector")
+                    if df_series is not None and not df_series.empty:
+                        try:
+                            c_ser_sec = [c for c in df_series.columns if 'sect' in c.lower()][0]
+                            c_ser_fec = [c for c in df_series.columns if 'fech' in c.lower() or 'date' in c.lower()][0]
+                            c_ser_val = [c for c in df_series.columns if 'val' in c.lower() or 'indic' in c.lower() or 'num' in c.lower()][-1]
+                            
+                            df_geo = df_series[df_series[c_ser_sec].astype(str).str.lower().str.strip() == sector_sel.lower().strip()].copy()
+                            
+                            if not df_geo.empty:
+                                df_geo[c_ser_fec] = pd.to_datetime(df_geo[c_ser_fec])
+                                df_geo = df_geo.sort_values(by=c_ser_fec)
+                                
+                                df_geo[c_ser_val] = df_geo[c_ser_val].astype(str).str.replace('%', '', regex=False).str.replace(',', '.', regex=False)
+                                df_geo[c_ser_val] = pd.to_numeric(df_geo[c_ser_val], errors='coerce')
+                                
+                                fig = go.Figure()
+                                fig.add_trace(go.Scatter(
+                                    x=df_geo[c_ser_fec], 
+                                    y=df_geo[c_ser_val], 
+                                    mode='lines+markers', 
+                                    name=sector_sel, 
+                                    line=dict(color='#0083B0', width=3),
+                                    fill='tozeroy',
+                                    fillcolor='rgba(0, 131, 176, 0.05)'
+                                ))
+                                fig.update_layout(
+                                    template="plotly_white", 
+                                    margin=dict(l=20, r=20, t=20, b=20),
+                                    xaxis_title="Período / Mes",
+                                    yaxis_title="Valor"
+                                )
+                                st.plotly_chart(fig, use_container_width=True)
+                            else:
+                                st.warning("No hay datos numéricos cargados para este sector en la pestaña 'Datos_Series'.")
+                        except:
+                            st.error("Error al procesar el gráfico. Revisá las columnas de la pestaña 'Datos_Series'.")
                     else:
-                        st.warning("No hay datos numéricos cargados para este sector en la pestaña 'Datos_Series'.")
-                else:
-                    st.error("No se pudo leer la pestaña 'Datos_Series' del Google Sheet.")
-            
-            # ---- SOLAPA 3: PIZARRA DE PRECIOS DE REFERENCIA ----
-            with t_precios:
-                st.markdown("### Valores y Costos de Referencia en el Mercado")
-                st.text(str(info_sector['Precios_Referencia']))
+                        st.error("No se pudo leer la pestaña 'Datos_Series' del Google Sheet.")
                 
-            # ---- SOLAPA 4: MICRO-CONSUMO / CURIOSIDADES ----
-            with t_micro:
-                st.markdown("### Datos de Comportamiento y Consumo Específico")
-                st.warning(str(info_sector['Micro_Consumo']))
-                
-        else:
-            st.warning(f"No hay novedades cargadas para el sector {sector_sel} esta semana.")
+                with t_precios:
+                    st.markdown("### Valores y Costos de Referencia en el Mercado")
+                    st.text(str(info_sector[c_precios]))
+                    
+                with t_micro:
+                    st.markdown("### Datos de Comportamiento y Consumo Específico")
+                    st.warning(str(info_sector[c_micro]))
+                    
+            else:
+                st.warning(f"No hay novedades cargadas para el sector {sector_sel} esta semana.")
+        except Exception as e:
+            st.error("Asegurate de que la pestaña 'Detalle_Sectores' tenga las columnas básicas: Sector, KPI_Nombre, KPI_Valor, Analisis_Semanal, Precios_Referencia y Micro_Consumo.")
