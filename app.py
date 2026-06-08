@@ -53,7 +53,7 @@ dolar_mep_vivo, dolar_oficial_vivo, brecha_viva = obtener_dolares_vivos()
 # --- CONEXIÓN A GOOGLE SHEETS (4 PESTAÑAS) ---
 SHEET_ID = "1zksr6ipnnKgYQJR8_H1PLdyiglmCAAaBe29Xb-8zCoY"
 
-@st.cache_data(ttl=5) # Cache ultra bajo de 5 segundos para pruebas en tiempo real
+@st.cache_data(ttl=5) # Cache en 5 segundos para pruebas en tiempo real
 def cargar_pestana(nombre_pestana):
     url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={nombre_pestana}"
     try:
@@ -64,7 +64,7 @@ def cargar_pestana(nombre_pestana):
 # Cargamos las 4 fuentes de datos
 df_home = cargar_pestana("Home_General")
 df_semaforo = cargar_pestana("Semaforo_Sectores")
-df_detalles = cargar_pestana("Detalles_Sectores")
+df_detalles = cargar_pestana("Detail_Sectores") if cargar_pestana("Detail_Sectores") is not None else cargar_pestana("Detalle_Sectores")
 df_series = cargar_pestana("Datos_Series")
 
 
@@ -75,7 +75,13 @@ pantalla = st.sidebar.radio("Seleccioná la vista:", ["🏠 Presentación Genera
 if pantalla == "🏢 Análisis por Sector":
     st.sidebar.divider()
     if df_detalles is not None and not df_detalles.empty:
-        c_sector = next((c for c in df_detalles.columns if 'sect' in c.lower()), df_detalles.columns[0])
+        # Validación estricta de la columna Sector para el menú
+        if "Sector" in df_detalles.columns:
+            c_sector = "Sector"
+        else:
+            st.error(f"No encontré la columna Sector en la pestaña 'Detalle_Sectores'. Columnas detectadas: {df_detalles.columns.tolist()}")
+            st.stop()
+            
         sectores_lista = df_detalles[c_sector].dropna().astype(str).str.strip().unique().tolist()
         sectores_lista = sorted([s for s in sectores_lista if s and s.lower() != 'nan'])
     else:
@@ -160,7 +166,7 @@ if pantalla == "🏠 Presentación General":
 
 
 # =====================================================================
-# VISTA 2: ANÁLISIS DETALLADO POR SECTOR (INDESTRUCTIBLE)
+# VISTA 2: ANÁLISIS DETALLADO POR SECTOR (ESTRICTO)
 # =====================================================================
 elif pantalla == "🏢 Análisis por Sector":
     st.title(f"Sector: {sector_sel}")
@@ -168,31 +174,37 @@ elif pantalla == "🏢 Análisis por Sector":
     
     if df_detalles is not None and not df_detalles.empty:
         try:
-            # BUSQUEDA INTELIGENTE DE COLUMNAS
-            c_sector = next((c for c in df_detalles.columns if 'sect' in c.lower()), df_detalles.columns[0])
-            c_kpi_nom = next((c for c in df_detalles.columns if 'kpi_nom' in c.lower() or 'nom' in c.lower()), None)
-            c_kpi_val = next((c for c in df_detalles.columns if 'kpi_val' in c.lower() or 'val' in c.lower()), None)
-            c_analisis = next((c for c in df_detalles.columns if 'analis' in c.lower() or 'notic' in c.lower()), None)
-            c_precios = next((c for c in df_detalles.columns if 'prec' in c.lower() or 'ref' in c.lower()), None)
-            c_micro = next((c for c in df_detalles.columns if 'micro' in c.lower() or 'curios' in c.lower() or 'comport' in c.lower()), None)
-            c_links = next((c for c in df_detalles.columns if 'link' in c.lower() or 'fuent' in c.lower()), None)
+            # 💡 CONTROL ESTRICTO EN BLOQUE DE TODAS LAS COLUMNAS REQUERIDAS
+            columnas_esperadas = ["Sector", "KPI_Nombre", "KPI_Valor", "Analisis_Semanal", "Precios_Referencia", "Micro_Consumo", "Links_Fuentes"]
+            columnas_faltantes = [col for col in columnas_esperadas if col not in df_detalles.columns]
+            
+            if columnas_faltantes:
+                st.error(f"Error Estricto: Faltan las siguientes columnas obligatorias en la pestaña 'Detalle_Sectores': {columnas_faltantes}. Columnas detectadas actualmente en tu planilla: {df_detalles.columns.tolist()}")
+                st.stop()
+
+            # Asignación directa y segura de variables
+            c_sector = "Sector"
+            c_kpi_nom = "KPI_Nombre"
+            c_kpi_val = "KPI_Valor"
+            c_analisis = "Analisis_Semanal"
+            c_precios = "Precios_Referencia"
+            c_micro = "Micro_Consumo"
+            c_links = "Links_Fuentes"
             
             # Filtrado por coincidencia de texto normalizado
             sector_busqueda = normalizar(sector_sel)
             df_sec = df_detalles[df_detalles[c_sector].astype(str).apply(normalizar) == sector_busqueda]
             
             if not df_sec.empty:
-                # 💡 ENFOQUE CORRECTO: Tomamos la última fila cargada para este sector específico
                 info_sector = df_sec.iloc[-1]
                 
                 if len(df_sec) > 1:
                     st.caption(f"Se encontraron {len(df_sec)} registros históricos para {sector_sel}. Mostrando el informe más reciente.")
                 
                 # Indicadores principales
-                if c_kpi_nom and c_kpi_val:
-                    st.markdown(f"### 📌 {info_sector[c_kpi_nom]}")
-                    st.subheader(str(info_sector[c_kpi_val]))
-                    st.divider()
+                st.markdown(f"### 📌 {info_sector[c_kpi_nom]}")
+                st.subheader(str(info_sector[c_kpi_val]))
+                st.divider()
                 
                 # Solapas internas de navegación
                 t_noticias, t_grafico, t_precios, t_micro = st.tabs([
@@ -203,13 +215,10 @@ elif pantalla == "🏢 Análisis por Sector":
                 ])
                 
                 with t_noticias:
-                    if c_analisis:
-                        st.markdown("### Análisis de Coyuntura Semanal")
-                        st.info(str(info_sector[c_analisis]))
-                    else:
-                        st.warning("Falta la columna 'Analisis_Semanal' en tu Sheets.")
+                    st.markdown("### Análisis de Coyuntura Semanal")
+                    st.info(str(info_sector[c_analisis]))
                     
-                    if c_links and pd.notna(info_sector[c_links]):
+                    if pd.notna(info_sector[c_links]):
                         st.markdown("**Fuentes y portales de interés:**")
                         links = re.split(r'[,;\n]', str(info_sector[c_links]))
                         for link in links:
@@ -256,18 +265,15 @@ elif pantalla == "🏢 Análisis por Sector":
                         st.error("No se pudo leer la pestaña 'Datos_Series' del Google Sheet.")
                 
                 with t_precios:
-                    if c_precios:
-                        st.markdown("### Valores y Costos de Referencia en el Mercado")
-                        st.text(str(info_sector[c_precios]))
-                    else:
-                        st.warning("Falta la columna 'Precios_Referencia' en tu Sheets.")
+                    st.markdown("### Valores y Costos de Referencia en el Mercado")
+                    st.text(str(info_sector[c_precios]))
                     
                 with t_micro:
-                    if c_micro and pd.notna(info_sector[c_micro]):
+                    if pd.notna(info_sector[c_micro]):
                         st.markdown("### Datos de Comportamiento y Consumo Específico")
                         st.warning(str(info_sector[c_micro]))
                     else:
-                        st.info("No hay datos de 'Micro_Consumo' cargados para este sector.")
+                        st.info("No hay datos cargados en la columna 'Micro_Consumo' para este sector.")
             else:
                 st.warning(f"No se encontraron novedades en el Sheets para el sector: {sector_sel}")
         except Exception as e:
