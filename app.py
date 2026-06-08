@@ -97,11 +97,6 @@ if pantalla == "🏢 Análisis por Sector":
 
 st.sidebar.divider()
 
-st.sidebar.markdown("### 2026 💰 Mercado y Divisas *(En vivo)*")
-with st.sidebar.container(border=True):
-    st.sidebar.metric(label="Dólar MEP", value=dolar_mep_vivo)
-    st.sidebar.metric(label="Dólar Oficial", value=dolar_oficial_vivo, delta=f"Brecha: {brecha_viva}", delta_color="inverse")
-
 
 # =====================================================================
 # VISTA 1: PRESENTACIÓN GENERAL (HOME)
@@ -113,6 +108,7 @@ if pantalla == "🏠 Presentación General":
         st.title(f"📊 LUNES MACRO — {str(ultimo_informe['Fecha'])}")
         st.divider()
         
+        # 1. Cabecera de Impacto
         st.markdown("### 🔑 3 Claves de esta Semana")
         with st.container(border=True):
             st.markdown(f"1️⃣ {ultimo_informe['Clave_1']}")
@@ -121,6 +117,7 @@ if pantalla == "🏠 Presentación General":
             
         st.divider()
         
+        # 2. El Semáforo de la Economía Real
         st.markdown("### 🚨 Semáforo: Estado de los Sectores")
         if df_semaforo is not None and not df_semaforo.empty:
             try:
@@ -139,6 +136,7 @@ if pantalla == "🏠 Presentación General":
                 st.error("Revisá los títulos de la pestaña 'Semaforo_Sectores'.")
         st.divider()
         
+        # 3. Bloque Inflación y Tasas
         st.markdown("### 📈 Inflación y Tasas")
         col_ipc, col_equilibra = st.columns([1, 1])
         
@@ -159,6 +157,16 @@ if pantalla == "🏠 Presentación General":
                 st.markdown(f"⚡ **Alta Frecuencia (Equilibra): {str(ultimo_informe['Equilibra_Semanal'])}**")
                 st.caption("Contexto y Regulados:")
                 st.write(str(ultimo_informe['Equilibra_Contexto']))
+        
+        st.divider()
+
+        # 4. 💡 BLOQUE FINANCIERO CENTRAL (¡Acomodado acá!)
+        st.markdown("### 💰 Mercado Financiero y Divisas *(API en vivo)*")
+        with st.container(border=True):
+            cf1, cf2, cf3 = st.columns(3)
+            cf1.metric(label="Dólar MEP (Venta)", value=dolar_mep_vivo)
+            cf2.metric(label="Dólar Oficial (Venta)", value=dolar_oficial_vivo)
+            cf3.metric(label="Brecha Cambiaria", value=brecha_viva, delta="Mercado unificado", delta_color="off")
                 
     else:
         st.error("No se pudieron cargar los datos de la pestaña 'Home_General'.")
@@ -267,6 +275,3 @@ elif pantalla == "🏢 Análisis por Sector":
             else:
                 st.warning(f"No hay novedades cargadas para el sector {sector_sel} esta semana.")
         except Exception as e:
-            st.error(f"Error en Detalle_Sectores: {e}")
-    else:
-        st.error("No se pudo leer la pestaña 'Detalle_Sectores' del Google Sheet.")
