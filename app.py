@@ -64,7 +64,7 @@ def cargar_pestana(nombre_pestana):
 # Cargamos las 4 fuentes de datos
 df_home = cargar_pestana("Home_General")
 df_semaforo = cargar_pestana("Semaforo_Sectores")
-df_detalles = cargar_pestana("Detail_Sectores") if cargar_pestana("Detail_Sectores") is not None else cargar_pestana("Detalle_Sectores")
+df_detalles = cargar_pestana("Detalles_Sectores")
 df_series = cargar_pestana("Datos_Series")
 
 
