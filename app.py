@@ -99,7 +99,7 @@ st.sidebar.divider()
 # =====================================================================
 # VISTA 1: PRESENTACIÓN GENERAL (HOME)
 # =====================================================================
-if pantalla == "🏠 Presentación General":
+if pantalla == "🏠 Economía General":
     if df_home is not None and not df_home.empty:
         ultimo_informe = df_home.iloc[0]
         
