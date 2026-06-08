@@ -61,10 +61,10 @@ def cargar_pestana(nombre_pestana):
     except:
         return None
 
-# Cargamos las 4 fuentes de datos
+# Cargamos las 4 fuentes de datos de forma directa y exacta
 df_home = cargar_pestana("Home_General")
 df_semaforo = cargar_pestana("Semaforo_Sectores")
-df_detalles = cargar_pestana("Detail_Sectores") if cargar_pestana("Detail_Sectores") is not None else cargar_pestana("Detalle_Sectores")
+df_detalles = cargar_pestana("Detalle_Sectores")
 df_series = cargar_pestana("Datos_Series")
 
 
@@ -174,7 +174,7 @@ elif pantalla == "🏢 Análisis por Sector":
     
     if df_detalles is not None and not df_detalles.empty:
         try:
-            # 💡 CONTROL ESTRICTO EN BLOQUE DE TODAS LAS COLUMNAS REQUERIDAS
+            # CONTROL ESTRICTO EN BLOQUE DE TODAS LAS COLUMNAS REQUERIDAS
             columnas_esperadas = ["Sector", "KPI_Nombre", "KPI_Valor", "Analisis_Semanal", "Precios_Referencia", "Micro_Consumo", "Links_Fuentes"]
             columnas_faltantes = [col for col in columnas_esperadas if col not in df_detalles.columns]
             
@@ -273,7 +273,7 @@ elif pantalla == "🏢 Análisis por Sector":
                         st.markdown("### Datos de Comportamiento y Consumo Específico")
                         st.warning(str(info_sector[c_micro]))
                     else:
-                        st.info("No hay datos cargados en la columna 'Micro_Consumo' para este sector.")
+                        st.info("No hay datos de 'Micro_Consumo' cargados para este sector.")
             else:
                 st.warning(f"No se encontraron novedades en el Sheets para el sector: {sector_sel}")
         except Exception as e:
