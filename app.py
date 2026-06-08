@@ -39,7 +39,7 @@ dolar_mep_vivo, dolar_oficial_vivo, brecha_viva = obtener_dolares_vivos()
 
 # --- CONEXIÓN A GOOGLE SHEETS (4 PESTAÑAS) ---
 # REEMPLAZÁ ACÁ: Poné tu ID real entre las comillas
-SHEET_ID = "TU_ID_DE_GOOGLE_SHEETS_AQUI"
+SHEET_ID = "1zksr6ipnnKgYQJR8_H1PLdyiglmCAAaBe29Xb-8zCoY"
 
 @st.cache_data(ttl=300) # Se actualiza automáticamente cada 5 minutos
 def cargar_pestana(nombre_pestana):
