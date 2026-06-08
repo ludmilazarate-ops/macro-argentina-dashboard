@@ -88,6 +88,8 @@ if pantalla == "🏢 Análisis por Sector":
         sectores_lista = ["Comercio minorista", "Automotriz", "Construcción"]
 
     sector_sel = st.sidebar.selectbox("Elegí el Sector a analizar:", sectores_lista)
+    # 💡 CAMBIO AQUÍ: Ahora está perfectamente tabulado adentro de la pantalla de sectores
+    st.write(sectores_lista)
 
 st.sidebar.divider()
 
