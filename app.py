@@ -154,7 +154,7 @@ if pantalla == "🏠 Economía General":
             with st.container(border=True):
                 st.markdown(f"⚡ **Proyecciones privadas para el próximo mes: {str(ultimo_informe['Equilibra'])}**")
                 st.caption("Contexto:")
-                st.write(str(ultimo_informe['Equilibra']))
+                st.write(str(ultimo_informe['Equilibra_Contexto']))
         
         st.divider()
 
