@@ -152,9 +152,9 @@ if pantalla == "🏠 Economía General":
                 
         with col_equilibra:
             with st.container(border=True):
-                st.markdown(f"⚡ **Alta Frecuencia (Equilibra): {str(ultimo_informe['Equilibra_Semanal'])}**")
-                st.caption("Contexto y Regulados:")
-                st.write(str(ultimo_informe['Equilibra_Contexto']))
+                st.markdown(f"⚡ **Proyecciones privadas para el próximo mes: {str(ultimo_informe['Equilibra'])}**")
+                st.caption("Contexto:")
+                st.write(str(ultimo_informe['Equilibra']))
         
         st.divider()
 
